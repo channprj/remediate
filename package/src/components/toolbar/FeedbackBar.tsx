@@ -134,7 +134,7 @@ export function FeedbackBar({
         bar.style.height = "36px";
       } else {
         bar.style.width = "";
-        bar.style.height = "40px";
+        bar.style.height = collapsed ? "var(--rm-bar-collapsed-size)" : "40px";
       }
       return;
     }
@@ -146,7 +146,7 @@ export function FeedbackBar({
       bar.style.height = "40px";
     });
     return () => cancelAnimationFrame(id);
-  }, [isIdle, isSuccess, isError, hasContent, itemCount, collapsible, barRef]);
+  }, [isIdle, isSuccess, isError, hasContent, itemCount, collapsible, collapsed, barRef]);
 
   const guardClick = (fn: () => void) => {
     if (justDragged.current) return;
@@ -199,7 +199,7 @@ export function FeedbackBar({
           onClick={toggleCollapsed}
           aria-label="Expand feedback widget"
         >
-          <RightSmallLine size={20} />
+          <RightSmallLine size={18} />
         </button>
       ) : (
         <div className="rm-bar__content">
@@ -210,7 +210,7 @@ export function FeedbackBar({
               onClick={() => guardClick(toggleCollapsed)}
               aria-label="Collapse feedback widget"
             >
-              <RightSmallLine size={20} />
+              <RightSmallLine size={18} />
             </button>
           )}
           <button

@@ -2,18 +2,27 @@ import { useState, useCallback, useEffect, type RefObject } from "react";
 import type { BarEdge } from "../types";
 import { readBarState, patchBarState } from "../utils/bar-storage";
 
-const TAB_PEEK = 28; // px of the bar that stays visible when collapsed
+const TAB_PEEK = 24; // px of the bar that stays visible when collapsed
+const DEFAULT_COLLAPSED_SIZE = 36;
 
-function collapseTranslate(rect: DOMRect, edge: BarEdge): string {
+function readCollapsedSize(bar: HTMLElement): number {
+  const raw = getComputedStyle(bar).getPropertyValue("--rm-bar-collapsed-size");
+  const parsed = Number.parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : DEFAULT_COLLAPSED_SIZE;
+}
+
+function collapseTranslate(rect: DOMRect, edge: BarEdge, collapsedSize: number): string {
+  const sizeDelta = Math.max(0, rect.height - collapsedSize);
+
   switch (edge) {
     case "right":
       return `translate(${window.innerWidth - rect.left - TAB_PEEK}px, 0)`;
     case "left":
       return `translate(${TAB_PEEK - rect.right}px, 0)`;
     case "bottom":
-      return `translate(0, ${window.innerHeight - rect.top - TAB_PEEK}px)`;
+      return `translate(0, ${window.innerHeight - rect.top - TAB_PEEK - sizeDelta}px)`;
     case "top":
-      return `translate(0, ${TAB_PEEK - rect.bottom}px)`;
+      return `translate(0, ${TAB_PEEK - rect.bottom + sizeDelta}px)`;
   }
 }
 
@@ -49,13 +58,19 @@ export function useCollapsible({
       if (!b) return;
       b.style.transform = "";
       const rect = b.getBoundingClientRect();
-      b.style.transform = collapseTranslate(rect, edge);
+      b.style.transform = collapseTranslate(rect, edge, readCollapsedSize(b));
     };
-    apply();
+    let frame = requestAnimationFrame(apply);
 
-    window.addEventListener("resize", apply);
+    const handleResize = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(apply);
+    };
+
+    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener("resize", apply);
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", handleResize);
       const b = barRef.current;
       if (b) b.style.transform = "";
     };
