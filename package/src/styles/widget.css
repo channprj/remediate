@@ -366,6 +366,7 @@
 
 .rm-bar--collapsed {
   cursor: pointer;
+  border-radius: 9999px;
 }
 
 .rm-bar__tab {
@@ -406,12 +407,6 @@
 .rm-bar--collapsed[data-edge="left"] .rm-bar__tab svg { transform: rotate(0deg); }
 .rm-bar--collapsed[data-edge="top"] .rm-bar__tab svg { transform: rotate(90deg); }
 .rm-bar--collapsed[data-edge="bottom"] .rm-bar__tab svg { transform: rotate(-90deg); }
-
-/* Keep the chevron inside the visible peek sliver + round the inner corners. */
-.rm-bar--collapsed[data-edge="right"] { border-radius: 12px 0 0 12px; }
-.rm-bar--collapsed[data-edge="left"] { border-radius: 0 12px 12px 0; }
-.rm-bar--collapsed[data-edge="top"] { border-radius: 0 0 12px 12px; }
-.rm-bar--collapsed[data-edge="bottom"] { border-radius: 12px 12px 0 0; }
 
 .rm-bar--collapsed[data-edge="top"],
 .rm-bar--collapsed[data-edge="bottom"] {
