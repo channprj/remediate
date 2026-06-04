@@ -24,6 +24,8 @@ import "./styles/widget.css";
 interface EmbedConfig {
   endpoint?: string;
   metadata?: Record<string, unknown>;
+  snapToEdge?: boolean;
+  collapsible?: boolean;
 }
 
 function getConfig(): EmbedConfig {
@@ -48,6 +50,8 @@ function getConfig(): EmbedConfig {
     metadata: script.hasAttribute("data-metadata")
       ? (() => { try { return JSON.parse(script.getAttribute("data-metadata")!); } catch { console.warn("[Remediate] Invalid data-metadata JSON"); return undefined; } })()
       : undefined,
+    snapToEdge: script.hasAttribute("data-snap-to-edge") || undefined,
+    collapsible: script.hasAttribute("data-collapsible") || undefined,
   };
 }
 
@@ -63,6 +67,8 @@ function init() {
     const props: RemediateProps = {};
     if (config.endpoint) props.endpoint = config.endpoint;
     if (config.metadata) props.metadata = config.metadata;
+    if (config.snapToEdge) props.snapToEdge = true;
+    if (config.collapsible) props.collapsible = true;
 
     root.render(React.createElement(Remediate, props));
   } catch (err) {

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, type RefObject } from "react";
 import type { WidgetMode } from "../../types";
 import { isCaptureMode, isNoteMode } from "../../types";
 import { useDraggable } from "../../hooks/useDraggable";
+import { useCollapsible } from "../../hooks/useCollapsible";
 import {
   ScanLine,
   Cursor3Fill,
@@ -11,6 +12,7 @@ import {
   SendFill,
   CheckLine,
   AlertDiamondFill,
+  RightSmallLine,
 } from "../icons";
 import { Tooltip } from "../shared/Tooltip";
 
@@ -27,6 +29,8 @@ interface FeedbackBarProps {
   onDeleteAll: () => void;
   onAnchorAriaLabel?: (ariaLabel: string) => void;
   panelOpen?: boolean;
+  snapToEdge?: boolean;
+  collapsible?: boolean;
   barRef: RefObject<HTMLDivElement | null>;
 }
 
@@ -43,6 +47,8 @@ export function FeedbackBar({
   onDeleteAll,
   onAnchorAriaLabel,
   panelOpen,
+  snapToEdge,
+  collapsible,
   barRef,
 }: FeedbackBarProps) {
   const isSuccess = mode === "success";
@@ -55,8 +61,16 @@ export function FeedbackBar({
   const hideTooltips = () => setTooltipsHidden(true);
   const showTooltips = () => setTooltipsHidden(false);
 
-  const { position, isDragging, justDragged, handleMouseDown } = useDraggable({
+  const { position, isDragging, edge, justDragged, handlePointerDown } = useDraggable({
     enabled: !panelOpen,
+    snapToEdge: !!snapToEdge,
+    barRef,
+  });
+
+  const dockEdge = edge ?? "right";
+  const { collapsed, toggleCollapsed } = useCollapsible({
+    collapsible: !!collapsible,
+    edge: dockEdge,
     barRef,
   });
 
@@ -82,7 +96,7 @@ export function FeedbackBar({
         bar.style.width = itemCount > 9 ? "48px" : "36px";
         bar.style.height = "36px";
       } else {
-        bar.style.width = "";
+        bar.style.width = collapsible ? "92px" : "";
         bar.style.height = "40px";
       }
       return;
@@ -95,7 +109,7 @@ export function FeedbackBar({
       bar.style.height = "40px";
     });
     return () => cancelAnimationFrame(id);
-  }, [isIdle, isSuccess, isError, hasContent, itemCount, barRef]);
+  }, [isIdle, isSuccess, isError, hasContent, itemCount, collapsible, barRef]);
 
   const guardClick = (fn: () => void) => {
     if (justDragged.current) return;
@@ -110,20 +124,24 @@ export function FeedbackBar({
   return (
     <div
       ref={barRef}
-      className={`rm-bar ${!position ? "rm-pos-br" : ""} ${isIdle ? "" : "rm-bar--expanded"} ${isDragging ? "rm-bar--dragging" : ""} ${isIdle && itemCount > 0 ? "rm-bar--count-only" : ""}`}
+      className={`rm-bar ${!position ? "rm-pos-br" : ""} ${isIdle ? "" : "rm-bar--expanded"} ${isDragging ? "rm-bar--dragging" : ""} ${isIdle && itemCount > 0 ? "rm-bar--count-only" : ""} ${collapsed ? "rm-bar--collapsed" : ""}`}
       data-remediate-widget=""
+      data-edge={collapsible ? dockEdge : undefined}
       data-has-submenu={
         mode === "captureMenu" || mode === "noteMenu" || undefined
       }
       data-has-content={hasContent}
       data-success={isSuccess ? "" : undefined}
       data-error={isError ? "" : undefined}
-      onMouseDown={handleMouseDown}
+      onPointerDown={collapsed ? undefined : handlePointerDown}
       style={{
         position: "fixed",
         zIndex: 999999,
         visibility: "var(--rm-ready, hidden)" as any,
         ...(isIdle && itemCount > 0 ? { background: markerColor } : {}),
+        // Anchor to the nearer horizontal side so widening on expand grows
+        // INWARD (a right-docked bar must anchor `right`, else it expands
+        // off-screen and clips the toolbar buttons).
         ...(position
           ? position.r < position.x
             ? { right: position.r, top: position.y, left: "auto", bottom: "auto" }
@@ -131,137 +149,158 @@ export function FeedbackBar({
           : {}),
       }}
     >
-      <button
-        className={`rm-bar__trigger ${isIdle ? "" : "rm-bar__trigger--hidden"} ${isIdle && itemCount > 0 ? "rm-bar__trigger--count" : ""}`}
-        onClick={() => guardClick(onActivate)}
-        aria-label={itemCount > 0 ? `Open feedback widget, ${itemCount} items` : "Open feedback widget"}
-      >
-        <span className={`rm-bar__count-text ${isIdle && itemCount > 0 ? "rm-bar__count-text--visible" : ""}`}>
-          {itemCount > 0 ? itemCount : ""}
-        </span>
-        <div className={`rm-bar__text-wrapper ${isIdle && itemCount > 0 ? "rm-bar__text-wrapper--hidden" : ""}`}>
-          <span className="rm-bar__text">Feedback</span>
-          {isIdle && itemCount > 0 && (
-            <span className="rm-bar__badge">{itemCount}</span>
+      {collapsed ? (
+        <button
+          className="rm-bar__tab"
+          onClick={toggleCollapsed}
+          aria-label="Expand feedback widget"
+        >
+          <span className="rm-bar__tab-grip" />
+        </button>
+      ) : (
+        <div className="rm-bar__content">
+          {collapsible && isIdle && itemCount === 0 && (
+            <button
+              className="rm-bar__collapse"
+              onClick={() => guardClick(toggleCollapsed)}
+              aria-label="Collapse feedback widget"
+            >
+              <RightSmallLine size={16} />
+            </button>
           )}
-        </div>
-      </button>
+          <button
+            className={`rm-bar__trigger ${isIdle ? "" : "rm-bar__trigger--hidden"} ${isIdle && itemCount > 0 ? "rm-bar__trigger--count" : ""}`}
+            onClick={() => guardClick(onActivate)}
+            aria-label={itemCount > 0 ? `Open feedback widget, ${itemCount} items` : "Open feedback widget"}
+          >
+            <span className={`rm-bar__count-text ${isIdle && itemCount > 0 ? "rm-bar__count-text--visible" : ""}`}>
+              {itemCount > 0 ? itemCount : ""}
+            </span>
+            <div className={`rm-bar__text-wrapper ${isIdle && itemCount > 0 ? "rm-bar__text-wrapper--hidden" : ""}`}>
+              <span className="rm-bar__text">Feedback</span>
+              {isIdle && itemCount > 0 && (
+                <span className="rm-bar__badge">{itemCount}</span>
+              )}
+            </div>
+          </button>
 
-      {isSuccess && (
-        <div className="rm-bar__check">
-          <CheckLine size={24} />
-        </div>
-      )}
+          {isSuccess && (
+            <div className="rm-bar__check">
+              <CheckLine size={24} />
+            </div>
+          )}
 
-      {isError && (
-        <div className="rm-bar__error">
-          <AlertDiamondFill size={20} />
-          <span className="rm-bar__error-text">Submission Failed</span>
-        </div>
-      )}
+          {isError && (
+            <div className="rm-bar__error">
+              <AlertDiamondFill size={20} />
+              <span className="rm-bar__error-text">Submission Failed</span>
+            </div>
+          )}
 
-      <div
-        ref={toolsRef}
-        className={`rm-bar__tools ${!isIdle && !isSuccess && !isError ? "rm-bar__tools--visible" : ""}`}
-        onMouseLeave={showTooltips}
-      >
-        <div className="rm-toolbar__actions">
-          <Tooltip content="Capture" disabled={tooltipsHidden} anchorRef={barRef}>
-            <button
-              className={`rm-toolbar-btn ${captureActive ? "rm-toolbar-btn--active" : ""}`}
-              onClick={(e) => guardClick(() => {
-                hideTooltips();
-                if (!captureActive) reportAnchor(e);
-                onSetMode(captureActive ? "active" : "captureMenu");
-              })}
-              aria-label="Capture mode"
-            >
-              <ScanLine size={20} />
-            </button>
-          </Tooltip>
-
-          <Tooltip content="Annotate" disabled={tooltipsHidden} anchorRef={barRef}>
-            <button
-              className={`rm-toolbar-btn ${annotateActive ? "rm-toolbar-btn--active" : ""}`}
-              onClick={() => guardClick(() => {
-                hideTooltips();
-                onSetMode(annotateActive ? "active" : "annotating");
-              })}
-              aria-label="Annotate mode"
-            >
-              <Cursor3Fill size={20} />
-            </button>
-          </Tooltip>
-
-          <Tooltip content="Note" disabled={tooltipsHidden} anchorRef={barRef}>
-            <button
-              className={`rm-toolbar-btn ${noteActive ? "rm-toolbar-btn--active" : ""}`}
-              onClick={(e) => guardClick(() => {
-                hideTooltips();
-                if (!noteActive) reportAnchor(e);
-                onSetMode(noteActive ? "active" : "noteMenu");
-              })}
-              aria-label="Note mode"
-            >
-              <PenFill size={20} />
-            </button>
-          </Tooltip>
-        </div>
-
-        {hasContent && (
-          <>
-            <div className="rm-toolbar-divider" />
+          <div
+            ref={toolsRef}
+            className={`rm-bar__tools ${!isIdle && !isSuccess && !isError ? "rm-bar__tools--visible" : ""}`}
+            onMouseLeave={showTooltips}
+          >
             <div className="rm-toolbar__actions">
-              <Tooltip content="Delete all" disabled={tooltipsHidden} anchorRef={barRef}>
+              <Tooltip content="Capture" disabled={tooltipsHidden} anchorRef={barRef}>
                 <button
-                  className="rm-toolbar-btn"
-                  onClick={() => guardClick(() => {
-                    hideTooltips();
-                    onDeleteAll();
-                  })}
-                  aria-label="Delete all items"
-                >
-                  <Delete2Fill size={20} />
-                </button>
-              </Tooltip>
-              <Tooltip content="Review" disabled={tooltipsHidden} anchorRef={barRef}>
-                <button
-                  className="rm-toolbar-btn rm-toolbar-btn--review"
+                  className={`rm-toolbar-btn ${captureActive ? "rm-toolbar-btn--active" : ""}`}
                   onClick={(e) => guardClick(() => {
                     hideTooltips();
-                    reportAnchor(e);
-                    onReview();
+                    if (!captureActive) reportAnchor(e);
+                    onSetMode(captureActive ? "active" : "captureMenu");
                   })}
-                  aria-label="Review and submit"
+                  aria-label="Capture mode"
                 >
-                  <SendFill size={20} />
-                  <span
-                    className="rm-toolbar-btn__badge"
-                    style={{ background: markerColor }}
-                  >
-                    {itemCount}
-                  </span>
+                  <ScanLine size={20} />
+                </button>
+              </Tooltip>
+
+              <Tooltip content="Annotate" disabled={tooltipsHidden} anchorRef={barRef}>
+                <button
+                  className={`rm-toolbar-btn ${annotateActive ? "rm-toolbar-btn--active" : ""}`}
+                  onClick={() => guardClick(() => {
+                    hideTooltips();
+                    onSetMode(annotateActive ? "active" : "annotating");
+                  })}
+                  aria-label="Annotate mode"
+                >
+                  <Cursor3Fill size={20} />
+                </button>
+              </Tooltip>
+
+              <Tooltip content="Note" disabled={tooltipsHidden} anchorRef={barRef}>
+                <button
+                  className={`rm-toolbar-btn ${noteActive ? "rm-toolbar-btn--active" : ""}`}
+                  onClick={(e) => guardClick(() => {
+                    hideTooltips();
+                    if (!noteActive) reportAnchor(e);
+                    onSetMode(noteActive ? "active" : "noteMenu");
+                  })}
+                  aria-label="Note mode"
+                >
+                  <PenFill size={20} />
                 </button>
               </Tooltip>
             </div>
-          </>
-        )}
 
-        <div className="rm-toolbar-divider" />
+            {hasContent && (
+              <div className="rm-toolbar__content-actions">
+                <div className="rm-toolbar-divider" />
+                <div className="rm-toolbar__actions">
+                  <Tooltip content="Delete all" disabled={tooltipsHidden} anchorRef={barRef}>
+                    <button
+                      className="rm-toolbar-btn"
+                      onClick={() => guardClick(() => {
+                        hideTooltips();
+                        onDeleteAll();
+                      })}
+                      aria-label="Delete all items"
+                    >
+                      <Delete2Fill size={20} />
+                    </button>
+                  </Tooltip>
+                  <Tooltip content="Review" disabled={tooltipsHidden} anchorRef={barRef}>
+                    <button
+                      className="rm-toolbar-btn rm-toolbar-btn--review"
+                      onClick={(e) => guardClick(() => {
+                        hideTooltips();
+                        reportAnchor(e);
+                        onReview();
+                      })}
+                      aria-label="Review and submit"
+                    >
+                      <SendFill size={20} />
+                      <span
+                        className="rm-toolbar-btn__badge"
+                        style={{ background: markerColor }}
+                      >
+                        {itemCount}
+                      </span>
+                    </button>
+                  </Tooltip>
+                </div>
+              </div>
+            )}
 
-        <Tooltip content="Close" disabled={tooltipsHidden} anchorRef={barRef}>
-          <button
-            className="rm-toolbar-btn rm-toolbar-btn--close"
-            onClick={() => guardClick(() => {
-              hideTooltips();
-              onClose();
-            })}
-            aria-label="Close widget"
-          >
-            <CloseLine size={20} />
-          </button>
-        </Tooltip>
-      </div>
+            <div className="rm-toolbar-divider" />
+
+            <Tooltip content="Close" disabled={tooltipsHidden} anchorRef={barRef}>
+              <button
+                className="rm-toolbar-btn rm-toolbar-btn--close"
+                onClick={() => guardClick(() => {
+                  hideTooltips();
+                  onClose();
+                })}
+                aria-label="Close widget"
+              >
+                <CloseLine size={20} />
+              </button>
+            </Tooltip>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

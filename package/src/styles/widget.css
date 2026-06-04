@@ -79,6 +79,11 @@
   align-items: center;
   justify-content: flex-end;
   overflow: hidden;
+  /* Drag is a custom gesture: never let a fast flick start a text selection
+     (desktop) or a scroll/pan that fires pointercancel (touch). */
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
   /* Explicit width/height transition */
   width: 90px;
   height: 40px;
@@ -103,12 +108,16 @@
 }
 
 .rm-bar--dragging {
-  user-select: none;
   will-change: transform;
 }
 
 .rm-bar--dragging * {
   pointer-events: none !important;
+}
+
+.rm-bar__content,
+.rm-toolbar__content-actions {
+  display: contents;
 }
 
 /* Width is set dynamically via JS measurement — no hardcoded expanded widths */
@@ -284,6 +293,90 @@
 
 .rm-pos-bl { bottom: 20px; left: 20px; }
 .rm-pos-br { bottom: 20px; right: 20px; }
+
+/* ── Collapse control (chevron on the idle bar) ── */
+
+.rm-bar__collapse {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  color: var(--rm-fg-50);
+  z-index: 2;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.rm-bar__collapse:hover {
+  color: var(--rm-fg);
+  background: var(--rm-fg-10);
+}
+
+/* When the chevron is present (collapsible + idle), pack the label snugly
+   to its right so there is no dead space on the left of "Feedback". */
+.rm-bar__collapse ~ .rm-bar__trigger {
+  left: 20px;
+  justify-content: flex-start;
+}
+
+.rm-bar__collapse ~ .rm-bar__trigger .rm-bar__text {
+  padding-left: 3px;
+}
+
+/* Point the chevron toward the docked edge. */
+.rm-bar[data-edge="right"] .rm-bar__collapse svg { transform: rotate(0deg); }
+.rm-bar[data-edge="left"] .rm-bar__collapse svg { transform: rotate(180deg); }
+.rm-bar[data-edge="top"] .rm-bar__collapse svg { transform: rotate(-90deg); }
+.rm-bar[data-edge="bottom"] .rm-bar__collapse svg { transform: rotate(90deg); }
+
+/* ── Collapsed state (thin tab on the docked edge) ── */
+
+.rm-bar--collapsed {
+  cursor: pointer;
+}
+
+.rm-bar__tab {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.rm-bar__tab-grip {
+  display: block;
+  background: var(--rm-fg-35);
+  border-radius: 9999px;
+}
+
+/* Grip orientation per edge. */
+.rm-bar[data-edge="right"] .rm-bar__tab-grip,
+.rm-bar[data-edge="left"] .rm-bar__tab-grip { width: 3px; height: 18px; }
+.rm-bar[data-edge="top"] .rm-bar__tab-grip,
+.rm-bar[data-edge="bottom"] .rm-bar__tab-grip { width: 18px; height: 3px; }
+
+/* Keep the grip inside the visible peek sliver + round the inner corners. */
+.rm-bar--collapsed[data-edge="right"] { border-radius: 12px 0 0 12px; }
+.rm-bar--collapsed[data-edge="left"] { border-radius: 0 12px 12px 0; }
+.rm-bar--collapsed[data-edge="top"] { border-radius: 0 0 12px 12px; }
+.rm-bar--collapsed[data-edge="bottom"] { border-radius: 12px 12px 0 0; }
+
+.rm-bar--collapsed[data-edge="right"] .rm-bar__tab { justify-content: flex-start; padding-left: 6px; }
+.rm-bar--collapsed[data-edge="left"] .rm-bar__tab { justify-content: flex-end; padding-right: 6px; }
+.rm-bar--collapsed[data-edge="top"] .rm-bar__tab { align-items: flex-end; padding-bottom: 4px; }
+.rm-bar--collapsed[data-edge="bottom"] .rm-bar__tab { align-items: flex-start; padding-top: 4px; }
 
 /* ── Toolbar buttons ─────────────────────── */
 
