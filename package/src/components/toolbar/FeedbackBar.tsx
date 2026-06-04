@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type RefObject } from "react";
-import type { WidgetMode } from "../../types";
+import type { BarEdge, WidgetMode } from "../../types";
 import { isCaptureMode, isNoteMode } from "../../types";
 import { useDraggable } from "../../hooks/useDraggable";
 import { useCollapsible } from "../../hooks/useCollapsible";
@@ -32,6 +32,43 @@ interface FeedbackBarProps {
   snapToEdge?: boolean;
   collapsible?: boolean;
   barRef: RefObject<HTMLDivElement | null>;
+}
+
+interface FeedbackBarPosition {
+  x: number;
+  y: number;
+  r: number;
+  b?: number;
+  edge?: BarEdge;
+}
+
+const DEFAULT_DOCK_EDGE: BarEdge = "right";
+const DEFAULT_BAR_HEIGHT = 40;
+
+function deriveDockEdge(
+  position: FeedbackBarPosition | null,
+  explicitEdge?: BarEdge,
+): BarEdge {
+  if (explicitEdge) return explicitEdge;
+  if (!position) return DEFAULT_DOCK_EDGE;
+
+  const bottom =
+    typeof position.b === "number"
+      ? position.b
+      : typeof window === "undefined"
+        ? Number.POSITIVE_INFINITY
+        : window.innerHeight - position.y - DEFAULT_BAR_HEIGHT;
+
+  const distances: Array<[BarEdge, number]> = [
+    ["left", position.x],
+    ["right", position.r],
+    ["top", position.y],
+    ["bottom", bottom],
+  ];
+
+  return distances.reduce((nearest, candidate) =>
+    candidate[1] < nearest[1] ? candidate : nearest,
+  )[0];
 }
 
 export function FeedbackBar({
@@ -67,16 +104,27 @@ export function FeedbackBar({
     barRef,
   });
 
-  const dockEdge = edge ?? "right";
+  const dockEdge = deriveDockEdge(position, edge);
   const { collapsed, toggleCollapsed } = useCollapsible({
     collapsible: !!collapsible,
     edge: dockEdge,
     barRef,
   });
+  const tabButtonRef = useRef<HTMLButtonElement>(null);
+  const shouldFocusTabAfterCollapseRef = useRef(false);
 
   // Measure tools width and set bar width dynamically
   const toolsRef = useRef<HTMLDivElement>(null);
   const BAR_PADDING = 8;
+
+  useEffect(() => {
+    if (!collapsed || !shouldFocusTabAfterCollapseRef.current) return;
+    shouldFocusTabAfterCollapseRef.current = false;
+    const id = requestAnimationFrame(() => {
+      tabButtonRef.current?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [collapsed]);
 
   useEffect(() => {
     const bar = barRef.current;
@@ -114,6 +162,11 @@ export function FeedbackBar({
   const guardClick = (fn: () => void) => {
     if (justDragged.current) return;
     fn();
+  };
+
+  const handleToggleCollapsed = () => {
+    shouldFocusTabAfterCollapseRef.current = !collapsed;
+    toggleCollapsed();
   };
 
   const reportAnchor = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -157,21 +210,24 @@ export function FeedbackBar({
     >
       {collapsed ? (
         <button
+          ref={tabButtonRef}
+          type="button"
           className="rm-bar__tab"
-          onClick={toggleCollapsed}
+          onClick={handleToggleCollapsed}
           aria-label="Expand feedback widget"
         >
-          <span className="rm-bar__tab-grip" />
+          <RightSmallLine size={20} />
         </button>
       ) : (
         <div className="rm-bar__content">
           {collapsible && isIdle && itemCount === 0 && (
             <button
+              type="button"
               className="rm-bar__collapse"
-              onClick={() => guardClick(toggleCollapsed)}
+              onClick={() => guardClick(handleToggleCollapsed)}
               aria-label="Collapse feedback widget"
             >
-              <RightSmallLine size={16} />
+              <RightSmallLine size={20} />
             </button>
           )}
           <button

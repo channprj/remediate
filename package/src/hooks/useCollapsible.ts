@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, type RefObject } from "react";
 import type { BarEdge } from "../types";
 import { readBarState, patchBarState } from "../utils/bar-storage";
 
-const TAB_PEEK = 20; // px of the bar that stays visible when collapsed
+const TAB_PEEK = 28; // px of the bar that stays visible when collapsed
 
 function collapseTranslate(rect: DOMRect, edge: BarEdge): string {
   switch (edge) {

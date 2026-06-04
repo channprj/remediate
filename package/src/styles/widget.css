@@ -25,8 +25,10 @@
   --rm-fg-10: rgba(231, 231, 231, 0.1);
   --rm-fg-05: rgba(231, 231, 231, 0.05);
   --rm-bar-width: 90px;
-  --rm-bar-collapsible-width: 94px;
+  --rm-chevron-size: 20px;
+  --rm-bar-collapsible-width: calc(var(--rm-bar-width) + 8px);
   --rm-bar-collapsed-size: 40px;
+  --rm-bar-tab-peek: 28px;
 }
 
 [data-remediate-widget][data-remediate-theme="light"]:not([data-remediate-widget] [data-remediate-widget]) {
@@ -40,8 +42,10 @@
   --rm-fg-10: rgba(28, 28, 28, 0.1);
   --rm-fg-05: rgba(28, 28, 28, 0.05);
   --rm-bar-width: 90px;
-  --rm-bar-collapsible-width: 94px;
+  --rm-chevron-size: 20px;
+  --rm-bar-collapsible-width: calc(var(--rm-bar-width) + 8px);
   --rm-bar-collapsed-size: 40px;
+  --rm-bar-tab-peek: 28px;
 }
 
 /* Reset host page styles so the widget renders identically everywhere */
@@ -316,8 +320,8 @@
   left: 4px;
   top: 50%;
   transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
+  width: var(--rm-chevron-size);
+  height: var(--rm-chevron-size);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -335,10 +339,16 @@
   background: var(--rm-fg-10);
 }
 
+.rm-bar__collapse:focus-visible {
+  outline: none;
+  color: var(--rm-fg);
+  background: var(--rm-fg-15);
+}
+
 /* When the chevron is present (collapsible + idle), pack the label snugly
    to its right so there is no dead space on the left of "Feedback". */
 .rm-bar__collapse ~ .rm-bar__trigger {
-  left: 20px;
+  left: calc(var(--rm-chevron-size) + 4px);
   justify-content: flex-start;
 }
 
@@ -368,21 +378,36 @@
   border: none;
   padding: 0;
   cursor: pointer;
+  transition: background-color 150ms ease;
 }
 
-.rm-bar__tab-grip {
-  display: block;
-  background: var(--rm-fg-35);
-  border-radius: 9999px;
+.rm-bar__tab svg {
+  color: var(--rm-fg-50);
+  transition: color 150ms ease;
 }
 
-/* Grip orientation per edge. */
-.rm-bar[data-edge="right"] .rm-bar__tab-grip,
-.rm-bar[data-edge="left"] .rm-bar__tab-grip { width: 3px; height: 18px; }
-.rm-bar[data-edge="top"] .rm-bar__tab-grip,
-.rm-bar[data-edge="bottom"] .rm-bar__tab-grip { width: 18px; height: 3px; }
+.rm-bar__tab:hover svg {
+  color: var(--rm-fg);
+}
 
-/* Keep the grip inside the visible peek sliver + round the inner corners. */
+.rm-bar__tab:focus,
+.rm-bar__tab:focus-visible {
+  outline: none;
+  background: var(--rm-fg-15);
+}
+
+.rm-bar__tab:focus svg,
+.rm-bar__tab:focus-visible svg {
+  color: var(--rm-fg);
+}
+
+/* Point the collapsed tab chevron toward the viewport, where it expands. */
+.rm-bar--collapsed[data-edge="right"] .rm-bar__tab svg { transform: rotate(180deg); }
+.rm-bar--collapsed[data-edge="left"] .rm-bar__tab svg { transform: rotate(0deg); }
+.rm-bar--collapsed[data-edge="top"] .rm-bar__tab svg { transform: rotate(90deg); }
+.rm-bar--collapsed[data-edge="bottom"] .rm-bar__tab svg { transform: rotate(-90deg); }
+
+/* Keep the chevron inside the visible peek sliver + round the inner corners. */
 .rm-bar--collapsed[data-edge="right"] { border-radius: 12px 0 0 12px; }
 .rm-bar--collapsed[data-edge="left"] { border-radius: 0 12px 12px 0; }
 .rm-bar--collapsed[data-edge="top"] { border-radius: 0 0 12px 12px; }
@@ -393,10 +418,25 @@
   width: var(--rm-bar-collapsed-size);
 }
 
-.rm-bar--collapsed[data-edge="right"] .rm-bar__tab { justify-content: flex-start; padding-left: 6px; }
-.rm-bar--collapsed[data-edge="left"] .rm-bar__tab { justify-content: flex-end; padding-right: 6px; }
-.rm-bar--collapsed[data-edge="top"] .rm-bar__tab { align-items: flex-end; padding-bottom: 4px; }
-.rm-bar--collapsed[data-edge="bottom"] .rm-bar__tab { align-items: flex-start; padding-top: 4px; }
+.rm-bar--collapsed[data-edge="right"] .rm-bar__tab {
+  justify-content: flex-start;
+  padding-left: calc((var(--rm-bar-tab-peek) - var(--rm-chevron-size)) / 2);
+}
+
+.rm-bar--collapsed[data-edge="left"] .rm-bar__tab {
+  justify-content: flex-end;
+  padding-right: calc((var(--rm-bar-tab-peek) - var(--rm-chevron-size)) / 2);
+}
+
+.rm-bar--collapsed[data-edge="top"] .rm-bar__tab {
+  align-items: flex-end;
+  padding-bottom: calc((var(--rm-bar-tab-peek) - var(--rm-chevron-size)) / 2);
+}
+
+.rm-bar--collapsed[data-edge="bottom"] .rm-bar__tab {
+  align-items: flex-start;
+  padding-top: calc((var(--rm-bar-tab-peek) - var(--rm-chevron-size)) / 2);
+}
 
 /* ── Toolbar buttons ─────────────────────── */
 
