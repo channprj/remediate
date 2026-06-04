@@ -96,7 +96,7 @@ export function FeedbackBar({
         bar.style.width = itemCount > 9 ? "48px" : "36px";
         bar.style.height = "36px";
       } else {
-        bar.style.width = collapsible ? "92px" : "";
+        bar.style.width = "";
         bar.style.height = "40px";
       }
       return;
@@ -126,6 +126,7 @@ export function FeedbackBar({
       ref={barRef}
       className={`rm-bar ${!position ? "rm-pos-br" : ""} ${isIdle ? "" : "rm-bar--expanded"} ${isDragging ? "rm-bar--dragging" : ""} ${isIdle && itemCount > 0 ? "rm-bar--count-only" : ""} ${collapsed ? "rm-bar--collapsed" : ""}`}
       data-remediate-widget=""
+      data-collapsible={collapsible ? "" : undefined}
       data-edge={collapsible ? dockEdge : undefined}
       data-has-submenu={
         mode === "captureMenu" || mode === "noteMenu" || undefined
@@ -143,9 +144,14 @@ export function FeedbackBar({
         // INWARD (a right-docked bar must anchor `right`, else it expands
         // off-screen and clips the toolbar buttons).
         ...(position
-          ? position.r < position.x
-            ? { right: position.r, top: position.y, left: "auto", bottom: "auto" }
-            : { left: position.x, top: position.y, right: "auto", bottom: "auto" }
+          ? {
+              ...(position.r < position.x
+                ? { right: position.r, left: "auto" }
+                : { left: position.x, right: "auto" }),
+              ...(snapToEdge && position.edge === "bottom" && typeof position.b === "number"
+                ? { bottom: position.b, top: "auto" }
+                : { top: position.y, bottom: "auto" }),
+            }
           : {}),
       }}
     >

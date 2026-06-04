@@ -28,6 +28,14 @@ interface EmbedConfig {
   collapsible?: boolean;
 }
 
+function readBooleanAttribute(script: Element, name: string): boolean | undefined {
+  const value = script.getAttribute(name);
+  if (value === null) return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "false" || normalized === "0" || normalized === "off") return false;
+  return true;
+}
+
 function getConfig(): EmbedConfig {
   // Priority: window.remediateConfig > data-* attributes on script tag
   if (
@@ -50,8 +58,8 @@ function getConfig(): EmbedConfig {
     metadata: script.hasAttribute("data-metadata")
       ? (() => { try { return JSON.parse(script.getAttribute("data-metadata")!); } catch { console.warn("[Remediate] Invalid data-metadata JSON"); return undefined; } })()
       : undefined,
-    snapToEdge: script.hasAttribute("data-snap-to-edge") || undefined,
-    collapsible: script.hasAttribute("data-collapsible") || undefined,
+    snapToEdge: readBooleanAttribute(script, "data-snap-to-edge"),
+    collapsible: readBooleanAttribute(script, "data-collapsible"),
   };
 }
 

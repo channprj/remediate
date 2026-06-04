@@ -24,6 +24,9 @@
   --rm-fg-15: rgba(231, 231, 231, 0.15);
   --rm-fg-10: rgba(231, 231, 231, 0.1);
   --rm-fg-05: rgba(231, 231, 231, 0.05);
+  --rm-bar-width: 90px;
+  --rm-bar-collapsible-width: 94px;
+  --rm-bar-collapsed-size: 40px;
 }
 
 [data-remediate-widget][data-remediate-theme="light"]:not([data-remediate-widget] [data-remediate-widget]) {
@@ -36,6 +39,9 @@
   --rm-fg-15: rgba(28, 28, 28, 0.15);
   --rm-fg-10: rgba(28, 28, 28, 0.1);
   --rm-fg-05: rgba(28, 28, 28, 0.05);
+  --rm-bar-width: 90px;
+  --rm-bar-collapsible-width: 94px;
+  --rm-bar-collapsed-size: 40px;
 }
 
 /* Reset host page styles so the widget renders identically everywhere */
@@ -85,7 +91,7 @@
   -webkit-user-select: none;
   touch-action: none;
   /* Explicit width/height transition */
-  width: 90px;
+  width: var(--rm-bar-width);
   height: 40px;
   transition: 
     width 400ms cubic-bezier(0.19, 1, 0.22, 1), 
@@ -115,9 +121,18 @@
   pointer-events: none !important;
 }
 
-.rm-bar__content,
+.rm-bar[data-collapsible] {
+  width: var(--rm-bar-collapsible-width);
+}
+
+.rm-bar__content {
+  position: absolute;
+  inset: 0;
+}
+
 .rm-toolbar__content-actions {
-  display: contents;
+  display: flex;
+  align-items: center;
 }
 
 /* Width is set dynamically via JS measurement — no hardcoded expanded widths */
@@ -202,7 +217,7 @@
 }
 
 .rm-bar__text {
-  padding: 0 8px;
+  padding: 0 10px 0 8px;
   height: 32px;
   display: flex;
   align-items: center;
@@ -219,7 +234,7 @@
 
 .rm-bar__trigger:focus-visible {
   outline: none;
-  background: var(--rm-fg-10);
+  background: var(--rm-fg-15);
 }
 
 @media (hover: hover) {
@@ -373,6 +388,11 @@
 .rm-bar--collapsed[data-edge="top"] { border-radius: 0 0 12px 12px; }
 .rm-bar--collapsed[data-edge="bottom"] { border-radius: 12px 12px 0 0; }
 
+.rm-bar--collapsed[data-edge="top"],
+.rm-bar--collapsed[data-edge="bottom"] {
+  width: var(--rm-bar-collapsed-size);
+}
+
 .rm-bar--collapsed[data-edge="right"] .rm-bar__tab { justify-content: flex-start; padding-left: 6px; }
 .rm-bar--collapsed[data-edge="left"] .rm-bar__tab { justify-content: flex-end; padding-right: 6px; }
 .rm-bar--collapsed[data-edge="top"] .rm-bar__tab { align-items: flex-end; padding-bottom: 4px; }
@@ -410,7 +430,7 @@
 .rm-toolbar-btn:focus-visible {
   outline: none;
   color: var(--rm-fg);
-  background: var(--rm-fg-10);
+  background: var(--rm-fg-15);
 }
 
 @media (hover: hover) {
@@ -650,7 +670,7 @@
 
 .rm-badge:focus-visible {
   outline: none;
-  background: color-mix(in srgb, var(--rm-accent), var(--rm-fg) 12%);
+  background: color-mix(in srgb, var(--rm-accent), var(--rm-fg) 18%);
 }
 
 .rm-badge-wrap--multi {
@@ -799,7 +819,7 @@
 }
 
 .rm-input-group:focus-within {
-  background: var(--rm-fg-10);
+  background: var(--rm-fg-15);
 }
 
 .rm-input-group__textarea {
@@ -1033,7 +1053,7 @@
 
 .rm-btn:focus-visible {
   outline: none;
-  background: var(--rm-fg-10);
+  background: var(--rm-fg-15);
 }
 
 .rm-btn:active {
@@ -1238,7 +1258,7 @@
 
 .rm-submenu__tile:focus-visible {
   outline: none;
-  background: var(--rm-fg-10);
+  background: var(--rm-fg-15);
   color: var(--rm-fg);
 }
 

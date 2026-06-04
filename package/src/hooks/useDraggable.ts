@@ -10,6 +10,7 @@ const SNAP_GAP = 10;
 const SNAP_DURATION = 380;
 const SNAP_EASING = "cubic-bezier(0.19, 1, 0.22, 1)";
 const DEFAULT_BAR_WIDTH = 90;
+const DEFAULT_BAR_HEIGHT = 40;
 // Throw horizon (react-grab style): on release the bar is projected from its
 // release velocity to `pos + velocity * this`, then snaps to the edge nearest
 // that projected point — so a fast flick lands on the edge it was thrown toward.
@@ -19,7 +20,44 @@ interface DragPosition {
   x: number;
   y: number;
   r: number;
+  b?: number;
   edge?: BarEdge;
+}
+
+function nearestEdgeFromDistances({
+  left,
+  right,
+  top,
+  bottom,
+}: {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}): BarEdge {
+  const min = Math.min(left, right, top, bottom);
+  if (min === left) return "left";
+  if (min === right) return "right";
+  if (min === top) return "top";
+  return "bottom";
+}
+
+function getNearestEdgeFromRect(rect: DOMRect): BarEdge {
+  return nearestEdgeFromDistances({
+    left: rect.left,
+    right: window.innerWidth - rect.right,
+    top: rect.top,
+    bottom: window.innerHeight - rect.bottom,
+  });
+}
+
+function getNearestEdgeFromPosition(position: Pick<DragPosition, "x" | "y" | "r" | "b">): BarEdge {
+  return nearestEdgeFromDistances({
+    left: position.x,
+    right: position.r,
+    top: position.y,
+    bottom: typeof position.b === "number" ? position.b : window.innerHeight - position.y - DEFAULT_BAR_HEIGHT,
+  });
 }
 
 /**
@@ -84,7 +122,14 @@ export function useDraggable({
     const saved = readBarState();
     if (saved && typeof saved.x === "number" && typeof saved.y === "number") {
       const r = typeof saved.r === "number" ? saved.r : window.innerWidth - saved.x - DEFAULT_BAR_WIDTH;
-      setPosition({ x: saved.x, y: saved.y, r, edge: saved.edge });
+      const b = typeof saved.b === "number" ? saved.b : window.innerHeight - saved.y - DEFAULT_BAR_HEIGHT;
+      setPosition({
+        x: saved.x,
+        y: saved.y,
+        r,
+        b,
+        edge: saved.edge ?? getNearestEdgeFromPosition({ x: saved.x, y: saved.y, r, b }),
+      });
     }
   }, []);
 
@@ -190,8 +235,10 @@ export function useDraggable({
         if (snapToEdge) {
           const { edge, left, top } = getSnapTarget(rect, velocity.x, velocity.y);
           const r = window.innerWidth - (left + rect.width);
-          const finalPos: DragPosition = { x: left, y: top, r, edge };
+          const b = window.innerHeight - (top + rect.height);
+          const finalPos: DragPosition = { x: left, y: top, r, b, edge };
           const anchorRight = r < left; // mirror the render's nearer-side anchor
+          const anchorBottom = edge === "bottom";
 
           // Seed baselines at the drag-end spot, reflow, then animate to the
           // snapped slot. The final styles are applied IMPERATIVELY (not only via
@@ -206,8 +253,13 @@ export function useDraggable({
               bar.style.left = `${left}px`;
               bar.style.right = "auto";
             }
-            bar.style.top = `${top}px`;
-            bar.style.bottom = "auto";
+            if (anchorBottom) {
+              bar.style.bottom = `${b}px`;
+              bar.style.top = "auto";
+            } else {
+              bar.style.top = `${top}px`;
+              bar.style.bottom = "auto";
+            }
           };
 
           if (prefersReducedMotion()) {
@@ -215,8 +267,10 @@ export function useDraggable({
           } else {
             bar.style.left = `${rect.left}px`;
             bar.style.right = `${window.innerWidth - rect.right}px`;
+            bar.style.top = `${rect.top}px`;
+            bar.style.bottom = `${window.innerHeight - rect.bottom}px`;
             bar.style.transition =
-              `left ${SNAP_DURATION}ms ${SNAP_EASING}, right ${SNAP_DURATION}ms ${SNAP_EASING}, top ${SNAP_DURATION}ms ${SNAP_EASING}`;
+              `left ${SNAP_DURATION}ms ${SNAP_EASING}, right ${SNAP_DURATION}ms ${SNAP_EASING}, top ${SNAP_DURATION}ms ${SNAP_EASING}, bottom ${SNAP_DURATION}ms ${SNAP_EASING}`;
             void bar.offsetWidth; // reflow -> transition baseline = current (drag-end) position
             applySnappedStyles();
 
@@ -235,7 +289,8 @@ export function useDraggable({
             x: rect.left,
             y: rect.top,
             r: window.innerWidth - rect.right,
-            edge: undefined,
+            b: window.innerHeight - rect.bottom,
+            edge: getNearestEdgeFromRect(rect),
           };
           patchBarState(finalPos);
           setPosition(finalPos);

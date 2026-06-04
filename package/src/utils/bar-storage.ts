@@ -6,6 +6,7 @@ export interface BarState {
   x: number;
   y: number;
   r: number;
+  b?: number;
   edge?: BarEdge;
   collapsed?: boolean;
 }
