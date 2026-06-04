@@ -110,21 +110,10 @@ export function FeedbackBar({
     edge: dockEdge,
     barRef,
   });
-  const tabButtonRef = useRef<HTMLButtonElement>(null);
-  const shouldFocusTabAfterCollapseRef = useRef(false);
 
   // Measure tools width and set bar width dynamically
   const toolsRef = useRef<HTMLDivElement>(null);
   const BAR_PADDING = 8;
-
-  useEffect(() => {
-    if (!collapsed || !shouldFocusTabAfterCollapseRef.current) return;
-    shouldFocusTabAfterCollapseRef.current = false;
-    const id = requestAnimationFrame(() => {
-      tabButtonRef.current?.focus({ preventScroll: true });
-    });
-    return () => cancelAnimationFrame(id);
-  }, [collapsed]);
 
   useEffect(() => {
     const bar = barRef.current;
@@ -162,11 +151,6 @@ export function FeedbackBar({
   const guardClick = (fn: () => void) => {
     if (justDragged.current) return;
     fn();
-  };
-
-  const handleToggleCollapsed = () => {
-    shouldFocusTabAfterCollapseRef.current = !collapsed;
-    toggleCollapsed();
   };
 
   const reportAnchor = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -210,10 +194,9 @@ export function FeedbackBar({
     >
       {collapsed ? (
         <button
-          ref={tabButtonRef}
           type="button"
           className="rm-bar__tab"
-          onClick={handleToggleCollapsed}
+          onClick={toggleCollapsed}
           aria-label="Expand feedback widget"
         >
           <RightSmallLine size={20} />
@@ -224,7 +207,7 @@ export function FeedbackBar({
             <button
               type="button"
               className="rm-bar__collapse"
-              onClick={() => guardClick(handleToggleCollapsed)}
+              onClick={() => guardClick(toggleCollapsed)}
               aria-label="Collapse feedback widget"
             >
               <RightSmallLine size={20} />
